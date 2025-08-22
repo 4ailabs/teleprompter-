@@ -312,43 +312,6 @@ function App() {
   // Parse the script once, synchronously. No need for loading/error states.
   const scriptLines = parseScriptLocally(defaultScript);
 
-  // Keyboard controls
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Prevent default behavior for these keys
-      if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.code)) {
-        event.preventDefault();
-      }
-
-      switch (event.code) {
-        case 'Space':
-          handlePlayPause();
-          break;
-        case 'ArrowUp':
-          setSpeed(prev => Math.min(prev + 10, 150));
-          break;
-        case 'ArrowDown':
-          setSpeed(prev => Math.max(prev - 10, 10));
-          break;
-        case 'ArrowLeft':
-          handleSkipBackward();
-          break;
-        case 'ArrowRight':
-          handleSkipForward();
-          break;
-        case 'Home':
-          handleReset();
-          break;
-        case 'End':
-          handleGoToEnd();
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   const handlePlayPause = useCallback(() => {
     setIsPlaying(prev => !prev);
   }, []);
@@ -363,35 +326,6 @@ function App() {
       setCurrentPosition(0);
     }
     setIsPlaying(false);
-  }, []);
-
-  const handleSkipForward = useCallback(() => {
-    if (scrollContainerRef.current) {
-      const container = scrollContainerRef.current;
-      const currentScroll = container.scrollTop;
-      const viewportHeight = container.clientHeight;
-      container.scrollTop = currentScroll + viewportHeight * 0.8;
-      setCurrentPosition(container.scrollTop);
-    }
-  }, []);
-
-  const handleSkipBackward = useCallback(() => {
-    if (scrollContainerRef.current) {
-      const container = scrollContainerRef.current;
-      const currentScroll = container.scrollTop;
-      const viewportHeight = container.clientHeight;
-      container.scrollTop = Math.max(0, currentScroll - viewportHeight * 0.8);
-      setCurrentPosition(container.scrollTop);
-    }
-  }, []);
-
-  const handleGoToEnd = useCallback(() => {
-    if (scrollContainerRef.current) {
-      const container = scrollContainerRef.current;
-      container.scrollTop = container.scrollHeight - container.clientHeight;
-      setCurrentPosition(container.scrollTop);
-      setIsPlaying(false);
-    }
   }, []);
 
   // Update current position when scrolling manually
@@ -422,10 +356,6 @@ function App() {
         speed={speed}
         onSpeedChange={handleSpeedChange}
         onReset={handleReset}
-        onSkipForward={handleSkipForward}
-        onSkipBackward={handleSkipBackward}
-        onGoToEnd={handleGoToEnd}
-        currentPosition={currentPosition}
       />
     </>
   );

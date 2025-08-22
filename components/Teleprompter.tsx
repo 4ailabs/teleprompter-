@@ -21,7 +21,7 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
   const targetPositionRef = useRef<number>(0);
   const lastUpdateTimeRef = useRef<number>(0);
 
-  // Improved animation that respects current scroll position
+  // Simple animation that respects current scroll position
   const animateScroll = useCallback(() => {
     const container = scrollContainerRef.current;
     if (!container || !isPlaying) return;
@@ -31,7 +31,7 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
     lastUpdateTimeRef.current = now;
 
     // Calculate scroll amount based on speed and time
-    const scrollAmount = (speed / 1000) * deltaTime; // Convert to pixels per millisecond
+    const scrollAmount = (speed / 1000) * deltaTime;
     
     // Get current scroll position
     const currentScrollTop = container.scrollTop;
@@ -46,7 +46,7 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
       return;
     }
 
-    // Smooth scrolling to target position
+    // Smooth scrolling
     const newScrollTop = currentScrollTop + scrollAmount;
     container.scrollTop = newScrollTop;
     
@@ -60,7 +60,6 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
       // Resume from current position
       const container = scrollContainerRef.current;
       if (container) {
-        // Always use the current scroll position when starting/resuming
         targetPositionRef.current = container.scrollTop;
         lastUpdateTimeRef.current = Date.now();
         
@@ -109,54 +108,23 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
     lastUpdateTimeRef.current = 0;
   }, [lines]);
 
-  // Calculate progress percentage
-  const getProgressPercentage = () => {
-    const container = scrollContainerRef.current;
-    if (!container) return 0;
-    
-    const maxScroll = container.scrollHeight - container.clientHeight;
-    if (maxScroll <= 0) return 100;
-    
-    return Math.min((currentPosition / maxScroll) * 100, 100);
-  };
-
-  const progressPercentage = getProgressPercentage();
-
   return (
     <div className="fixed inset-0 bg-black text-white overflow-hidden">
-      {/* Top and Bottom Fades - Mobile Optimized */}
+      {/* Top and Bottom Fades */}
       <div className="absolute top-0 left-0 right-0 h-1/5 sm:h-1/4 bg-gradient-to-b from-black to-transparent z-10" />
       <div className="absolute bottom-0 left-0 right-0 h-1/5 sm:h-1/4 bg-gradient-to-t from-black to-transparent z-10" />
       
-      {/* Focus Line - Mobile Optimized */}
-      <div className="absolute top-1/2 left-0 right-0 h-0.5 sm:h-1 -translate-y-1/2 bg-amber-400/50 z-10 focus-line" />
+      {/* Focus Line */}
+      <div className="absolute top-1/2 left-0 right-0 h-0.5 sm:h-1 -translate-y-1/2 bg-amber-400/50 z-10" />
 
-      {/* Progress Bar - Mobile Optimized */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-neutral-800 z-20">
-        <div 
-          className="h-full bg-amber-500 transition-all duration-300 ease-out"
-          style={{ width: `${progressPercentage}%` }}
-        />
-      </div>
-
-      {/* Status Indicator - Mobile Optimized */}
-      <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-20">
-        <div className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-mono ${
+      {/* Status Indicator */}
+      <div className="absolute top-4 right-4 z-20">
+        <div className={`px-3 py-1 rounded-full text-sm font-mono ${
           isPlaying 
             ? 'bg-green-600 text-white' 
             : 'bg-neutral-700 text-neutral-300'
         }`}>
-          {isPlaying ? '▶' : '⏸'}
-          <span className="hidden sm:inline ml-1">
-            {isPlaying ? 'REPRODUCIENDO' : 'PAUSADO'}
-          </span>
-        </div>
-      </div>
-
-      {/* Mobile Touch Instructions */}
-      <div className="absolute top-2 left-2 z-20 sm:hidden">
-        <div className="px-2 py-1 rounded-full bg-black/50 text-xs text-neutral-300">
-          👆 Desliza para navegar
+          {isPlaying ? 'PLAYING' : 'PAUSED'}
         </div>
       </div>
 
@@ -186,23 +154,6 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
         .hide-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;
-        }
-        .focus-line {
-          box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
-        }
-        
-        /* Mobile-specific optimizations */
-        @media (max-width: 640px) {
-          .focus-line {
-            box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
-          }
-        }
-        
-        /* Touch-friendly scrolling */
-        @media (hover: none) and (pointer: coarse) {
-          .scroll-smooth {
-            scroll-behavior: auto;
-          }
         }
       `}</style>
     </div>
