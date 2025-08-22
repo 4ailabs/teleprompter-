@@ -17,20 +17,27 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
   currentPosition 
 }) => {
   const animationFrameRef = useRef<number | null>(null);
-  const lastPositionRef = useRef<number>(0);
   const isPausedRef = useRef<boolean>(false);
-  const hasStartedRef = useRef<boolean>(false);
+  const targetPositionRef = useRef<number>(0);
+  const lastUpdateTimeRef = useRef<number>(0);
 
-  // Improved animation with smooth pause/resume
+  // Improved animation that respects current scroll position
   const animateScroll = useCallback(() => {
     const container = scrollContainerRef.current;
     if (!container || !isPlaying) return;
 
-    // Calculate scroll amount based on speed
-    const scrollAmount = speed / 60;
+    const now = Date.now();
+    const deltaTime = now - lastUpdateTimeRef.current;
+    lastUpdateTimeRef.current = now;
+
+    // Calculate scroll amount based on speed and time
+    const scrollAmount = (speed / 1000) * deltaTime; // Convert to pixels per millisecond
+    
+    // Get current scroll position
+    const currentScrollTop = container.scrollTop;
     
     // Check if we've reached the end
-    if (container.scrollTop >= container.scrollHeight - container.clientHeight) {
+    if (currentScrollTop >= container.scrollHeight - container.clientHeight) {
       // Stop at the end
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
@@ -39,9 +46,9 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
       return;
     }
 
-    // Smooth scrolling with position memory
-    container.scrollTop += scrollAmount;
-    lastPositionRef.current = container.scrollTop;
+    // Smooth scrolling to target position
+    const newScrollTop = currentScrollTop + scrollAmount;
+    container.scrollTop = newScrollTop;
     
     // Continue animation
     animationFrameRef.current = requestAnimationFrame(animateScroll);
@@ -53,14 +60,9 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
       // Resume from current position
       const container = scrollContainerRef.current;
       if (container) {
-        if (!hasStartedRef.current) {
-          // First time starting
-          lastPositionRef.current = currentPosition;
-          hasStartedRef.current = true;
-        } else {
-          // Always use current position when resuming (whether from pause or manual scroll)
-          lastPositionRef.current = currentPosition;
-        }
+        // Always use the current scroll position when starting/resuming
+        targetPositionRef.current = container.scrollTop;
+        lastUpdateTimeRef.current = Date.now();
         
         // Start animation
         if (!animationFrameRef.current) {
@@ -75,12 +77,6 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
         animationFrameRef.current = null;
       }
       isPausedRef.current = true;
-      
-      // Store current position when pausing
-      const container = scrollContainerRef.current;
-      if (container) {
-        lastPositionRef.current = container.scrollTop;
-      }
     }
 
     // Cleanup function
@@ -90,20 +86,27 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
         animationFrameRef.current = null;
       }
     };
-  }, [isPlaying, animateScroll, scrollContainerRef, currentPosition]);
+  }, [isPlaying, animateScroll, scrollContainerRef]);
 
   // Handle speed changes
   useEffect(() => {
     if (isPlaying && animationFrameRef.current) {
       // Restart animation with new speed
       cancelAnimationFrame(animationFrameRef.current);
+      lastUpdateTimeRef.current = Date.now();
       animationFrameRef.current = requestAnimationFrame(animateScroll);
     }
   }, [speed, isPlaying, animateScroll]);
 
-  // Reset hasStarted when component unmounts or script changes
+  // Reset when script changes
   useEffect(() => {
-    hasStartedRef.current = false;
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    isPausedRef.current = false;
+    targetPositionRef.current = 0;
+    lastUpdateTimeRef.current = 0;
   }, [lines]);
 
   // Calculate progress percentage
