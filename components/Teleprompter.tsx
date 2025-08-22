@@ -17,8 +17,9 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
   currentPosition 
 }) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastScrollPositionRef = useRef<number>(0);
 
-  // Super simple scroll function
+  // Smart scroll function that considers current position
   const scrollDown = () => {
     const container = scrollContainerRef.current;
     if (!container) return;
@@ -28,15 +29,30 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
       return;
     }
 
-    // Simple scroll down
-    container.scrollTop += 1;
+    // Get current scroll position
+    const currentScrollTop = container.scrollTop;
+    
+    // If manual scroll happened, update our reference
+    if (Math.abs(currentScrollTop - lastScrollPositionRef.current) > 5) {
+      lastScrollPositionRef.current = currentScrollTop;
+    }
+
+    // Scroll from current position
+    container.scrollTop = lastScrollPositionRef.current + 1;
+    lastScrollPositionRef.current = container.scrollTop;
   };
 
   // Start/stop scrolling
   useEffect(() => {
     if (isPlaying) {
+      // Sync with current scroll position when starting
+      const container = scrollContainerRef.current;
+      if (container) {
+        lastScrollPositionRef.current = container.scrollTop;
+      }
+      
       // Start scrolling
-      const interval = setInterval(scrollDown, 1000 / speed); // Convert speed to interval
+      const interval = setInterval(scrollDown, 1000 / speed);
       intervalRef.current = interval;
     } else {
       // Stop scrolling
@@ -61,6 +77,7 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+    lastScrollPositionRef.current = 0;
   }, [lines]);
 
   return (
