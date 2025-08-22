@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { ScriptLine } from '../types';
 
 interface TeleprompterProps {
@@ -16,94 +16,76 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
   scrollContainerRef,
   currentPosition 
 }) => {
-  const animationFrameRef = useRef<number | null>(null);
-  const isPausedRef = useRef<boolean>(false);
-  const lastUpdateTimeRef = useRef<number>(0);
+  const animationRef = useRef<number | null>(null);
+  const lastTimeRef = useRef<number>(0);
 
-  // Simple animation that always starts from current scroll position
-  const animateScroll = useCallback(() => {
+  // Simple scroll animation
+  const scroll = () => {
     const container = scrollContainerRef.current;
     if (!container || !isPlaying) return;
 
-    const now = Date.now();
-    const deltaTime = now - lastUpdateTimeRef.current;
-    lastUpdateTimeRef.current = now;
+    const now = performance.now();
+    const deltaTime = now - lastTimeRef.current;
+    lastTimeRef.current = now;
 
-    // Calculate scroll amount based on speed and time
+    // Calculate scroll amount
     const scrollAmount = (speed / 1000) * deltaTime;
     
-    // Get current scroll position
-    const currentScrollTop = container.scrollTop;
+    // Get current position
+    const currentPos = container.scrollTop;
     
-    // Check if we've reached the end
-    if (currentScrollTop >= container.scrollHeight - container.clientHeight) {
-      // Stop at the end
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
+    // Check if we're at the end
+    if (currentPos >= container.scrollHeight - container.clientHeight) {
       return;
     }
 
-    // Smooth scrolling from current position
-    const newScrollTop = currentScrollTop + scrollAmount;
-    container.scrollTop = newScrollTop;
+    // Move scroll
+    container.scrollTop = currentPos + scrollAmount;
     
     // Continue animation
-    animationFrameRef.current = requestAnimationFrame(animateScroll);
-  }, [isPlaying, speed, scrollContainerRef]);
+    animationRef.current = requestAnimationFrame(scroll);
+  };
 
-  // Handle play/pause state changes
+  // Start/stop animation
   useEffect(() => {
     if (isPlaying) {
-      // Always start animation from current scroll position
-      const container = scrollContainerRef.current;
-      if (container) {
-        // Reset timing to start fresh from current position
-        lastUpdateTimeRef.current = Date.now();
-        
-        // Start animation
-        if (!animationFrameRef.current) {
-          animationFrameRef.current = requestAnimationFrame(animateScroll);
-        }
-      }
-      isPausedRef.current = false;
+      // Start animation
+      lastTimeRef.current = performance.now();
+      animationRef.current = requestAnimationFrame(scroll);
     } else {
-      // Pause animation
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
+      // Stop animation
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
       }
-      isPausedRef.current = true;
     }
 
-    // Cleanup function
+    // Cleanup
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
       }
     };
-  }, [isPlaying, animateScroll, scrollContainerRef]);
+  }, [isPlaying]);
 
   // Handle speed changes
   useEffect(() => {
-    if (isPlaying && animationFrameRef.current) {
-      // Restart animation with new speed from current position
-      cancelAnimationFrame(animationFrameRef.current);
-      lastUpdateTimeRef.current = Date.now();
-      animationFrameRef.current = requestAnimationFrame(animateScroll);
+    if (isPlaying && animationRef.current) {
+      // Restart with new speed
+      cancelAnimationFrame(animationRef.current);
+      lastTimeRef.current = performance.now();
+      animationRef.current = requestAnimationFrame(scroll);
     }
-  }, [speed, isPlaying, animateScroll]);
+  }, [speed, isPlaying]);
 
-  // Reset when script changes
+  // Reset on script change
   useEffect(() => {
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
     }
-    isPausedRef.current = false;
-    lastUpdateTimeRef.current = 0;
+    lastTimeRef.current = 0;
   }, [lines]);
 
   return (
