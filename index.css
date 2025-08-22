@@ -1,0 +1,47 @@
+/* Custom styles for Theater Teleprompter */
+
+/* Smooth scrolling for the entire page */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Focus line animation */
+.focus-line {
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+}
+
+/* Text selection styling */
+::selection {
+  background: rgba(251, 191, 36, 0.3);
+  color: white;
+}
+
+/* Smooth transitions for all interactive elements */
+* {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Custom focus styles for accessibility */
+button:focus,
+input:focus {
+  outline: 2px solid rgba(251, 191, 36, 0.8);
+  outline-offset: 2px;
+}

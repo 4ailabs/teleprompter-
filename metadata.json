@@ -1,0 +1,5 @@
+{
+  "name": "Theater Teleprompter",
+  "description": "A dedicated teleprompter for theater actors, featuring a high-contrast dark mode display, play/pause, and speed controls for a smooth performance.",
+  "requestFramePermissions": []
+}

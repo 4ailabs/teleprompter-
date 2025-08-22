@@ -1,0 +1,34 @@
+{
+  "name": "theater-teleprompter",
+  "description": "A professional teleprompter application for theater performances and presentations",
+  "version": "1.0.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/4ailabs/teleprompter-.git"
+  },
+  "keywords": [
+    "teleprompter",
+    "theater",
+    "presentation",
+    "react",
+    "typescript"
+  ],
+  "author": "4ailabs",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "lucide-react": "^0.418.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}
