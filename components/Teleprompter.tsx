@@ -18,10 +18,9 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
 }) => {
   const animationFrameRef = useRef<number | null>(null);
   const isPausedRef = useRef<boolean>(false);
-  const targetPositionRef = useRef<number>(0);
   const lastUpdateTimeRef = useRef<number>(0);
 
-  // Simple animation that respects current scroll position
+  // Simple animation that always starts from current scroll position
   const animateScroll = useCallback(() => {
     const container = scrollContainerRef.current;
     if (!container || !isPlaying) return;
@@ -46,7 +45,7 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
       return;
     }
 
-    // Smooth scrolling
+    // Smooth scrolling from current position
     const newScrollTop = currentScrollTop + scrollAmount;
     container.scrollTop = newScrollTop;
     
@@ -57,10 +56,10 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
   // Handle play/pause state changes
   useEffect(() => {
     if (isPlaying) {
-      // Resume from current position
+      // Always start animation from current scroll position
       const container = scrollContainerRef.current;
       if (container) {
-        targetPositionRef.current = container.scrollTop;
+        // Reset timing to start fresh from current position
         lastUpdateTimeRef.current = Date.now();
         
         // Start animation
@@ -90,7 +89,7 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
   // Handle speed changes
   useEffect(() => {
     if (isPlaying && animationFrameRef.current) {
-      // Restart animation with new speed
+      // Restart animation with new speed from current position
       cancelAnimationFrame(animationFrameRef.current);
       lastUpdateTimeRef.current = Date.now();
       animationFrameRef.current = requestAnimationFrame(animateScroll);
@@ -104,7 +103,6 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
       animationFrameRef.current = null;
     }
     isPausedRef.current = false;
-    targetPositionRef.current = 0;
     lastUpdateTimeRef.current = 0;
   }, [lines]);
 
