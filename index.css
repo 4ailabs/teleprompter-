@@ -45,3 +45,188 @@ input:focus {
   outline: 2px solid rgba(251, 191, 36, 0.8);
   outline-offset: 2px;
 }
+
+/* ===== MOBILE OPTIMIZATIONS ===== */
+
+/* Touch-friendly button sizes */
+@media (max-width: 640px) {
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Larger touch targets for mobile */
+  .p-3 {
+    padding: 0.875rem;
+  }
+  
+  .p-4 {
+    padding: 1rem;
+  }
+}
+
+/* Mobile-specific animations */
+@media (max-width: 640px) {
+  .animate-in {
+    animation: slideInFromBottom 0.3s ease-out;
+  }
+  
+  @keyframes slideInFromBottom {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Touch gesture optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Disable hover effects on touch devices */
+  button:hover {
+    transform: none !important;
+    scale: none !important;
+  }
+  
+  /* Enable active states for touch feedback */
+  button:active {
+    transform: scale(0.95) !important;
+    transition: transform 0.1s ease-out;
+  }
+  
+  /* Larger touch areas */
+  input[type="range"] {
+    height: 24px;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #f59e0b;
+    cursor: pointer;
+  }
+  
+  input[type="range"]::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #f59e0b;
+    cursor: pointer;
+    border: none;
+  }
+}
+
+/* Mobile landscape optimizations */
+@media (max-width: 640px) and (orientation: landscape) {
+  .fixed.bottom-0 {
+    padding-bottom: 0.5rem;
+  }
+  
+  .fixed.top-20 {
+    top: 1rem;
+  }
+}
+
+/* Small mobile devices */
+@media (max-width: 375px) {
+  .px-3 {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  .gap-2 {
+    gap: 0.375rem;
+  }
+  
+  .gap-3 {
+    gap: 0.5rem;
+  }
+}
+
+/* Medium mobile devices */
+@media (min-width: 376px) and (max-width: 640px) {
+  .px-3 {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .max-w-4xl {
+    max-width: 42rem;
+  }
+  
+  .text-2xl {
+    font-size: 1.5rem;
+  }
+  
+  .text-3xl {
+    font-size: 1.875rem;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .focus-line {
+    box-shadow: 0 0 30px rgba(251, 191, 36, 0.6);
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  /* Already dark by default, but can add specific dark mode tweaks */
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+  
+  .scroll-smooth {
+    scroll-behavior: auto;
+  }
+}
+
+/* Print styles */
+@media print {
+  .fixed {
+    position: static !important;
+  }
+  
+  .bg-black {
+    background: white !important;
+    color: black !important;
+  }
+}
+
+/* Focus visible for keyboard navigation */
+.focus-visible:focus {
+  outline: 2px solid rgba(251, 191, 36, 0.8);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .bg-neutral-800 {
+    background: #000000 !important;
+  }
+  
+  .text-neutral-300 {
+    color: #ffffff !important;
+  }
+  
+  .border-neutral-700 {
+    border-color: #ffffff !important;
+  }
+}
