@@ -16,76 +16,51 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
   scrollContainerRef,
   currentPosition 
 }) => {
-  const animationRef = useRef<number | null>(null);
-  const lastTimeRef = useRef<number>(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Simple scroll animation
-  const scroll = () => {
+  // Super simple scroll function
+  const scrollDown = () => {
     const container = scrollContainerRef.current;
-    if (!container || !isPlaying) return;
+    if (!container) return;
 
-    const now = performance.now();
-    const deltaTime = now - lastTimeRef.current;
-    lastTimeRef.current = now;
-
-    // Calculate scroll amount
-    const scrollAmount = (speed / 1000) * deltaTime;
-    
-    // Get current position
-    const currentPos = container.scrollTop;
-    
     // Check if we're at the end
-    if (currentPos >= container.scrollHeight - container.clientHeight) {
+    if (container.scrollTop >= container.scrollHeight - container.clientHeight) {
       return;
     }
 
-    // Move scroll
-    container.scrollTop = currentPos + scrollAmount;
-    
-    // Continue animation
-    animationRef.current = requestAnimationFrame(scroll);
+    // Simple scroll down
+    container.scrollTop += 1;
   };
 
-  // Start/stop animation
+  // Start/stop scrolling
   useEffect(() => {
     if (isPlaying) {
-      // Start animation
-      lastTimeRef.current = performance.now();
-      animationRef.current = requestAnimationFrame(scroll);
+      // Start scrolling
+      const interval = setInterval(scrollDown, 1000 / speed); // Convert speed to interval
+      intervalRef.current = interval;
     } else {
-      // Stop animation
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
+      // Stop scrolling
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     }
 
     // Cleanup
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
-  }, [isPlaying]);
-
-  // Handle speed changes
-  useEffect(() => {
-    if (isPlaying && animationRef.current) {
-      // Restart with new speed
-      cancelAnimationFrame(animationRef.current);
-      lastTimeRef.current = performance.now();
-      animationRef.current = requestAnimationFrame(scroll);
-    }
-  }, [speed, isPlaying]);
+  }, [isPlaying, speed]);
 
   // Reset on script change
   useEffect(() => {
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-      animationRef.current = null;
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
-    lastTimeRef.current = 0;
   }, [lines]);
 
   return (
