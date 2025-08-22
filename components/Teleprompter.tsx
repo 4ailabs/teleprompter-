@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { ScriptLine } from '../types';
 
 interface TeleprompterProps {
@@ -17,9 +17,9 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
   currentPosition 
 }) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const [autoScrollPosition, setAutoScrollPosition] = useState(0);
+  const scrollCounterRef = useRef<number>(0);
 
-  // Simple scroll function that works
+  // Super simple scroll function
   const scrollDown = () => {
     const container = scrollContainerRef.current;
     if (!container) return;
@@ -29,20 +29,26 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
       return;
     }
 
-    // Move scroll by 1 pixel
-    container.scrollTop += 1;
-    
-    // Update our position tracker
-    setAutoScrollPosition(container.scrollTop);
+    // Simple increment
+    scrollCounterRef.current += 1;
+    container.scrollTop = scrollCounterRef.current;
   };
+
+  // Sync counter with manual scroll changes
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      scrollCounterRef.current = container.scrollTop;
+    }
+  }, [currentPosition]);
 
   // Handle play/pause
   useEffect(() => {
     if (isPlaying) {
-      // When starting play, get current scroll position
+      // When starting play, sync with current scroll position
       const container = scrollContainerRef.current;
       if (container) {
-        setAutoScrollPosition(container.scrollTop);
+        scrollCounterRef.current = container.scrollTop;
       }
       
       // Start scrolling
@@ -71,7 +77,7 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    setAutoScrollPosition(0);
+    scrollCounterRef.current = 0;
   }, [lines]);
 
   return (
