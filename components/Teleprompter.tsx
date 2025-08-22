@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { ScriptLine } from '../types';
 
 interface TeleprompterProps {
@@ -17,9 +17,9 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
   currentPosition 
 }) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const lastScrollPositionRef = useRef<number>(0);
+  const [autoScrollPosition, setAutoScrollPosition] = useState(0);
 
-  // Smart scroll function that considers current position
+  // Simple scroll function that works
   const scrollDown = () => {
     const container = scrollContainerRef.current;
     if (!container) return;
@@ -29,26 +29,20 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
       return;
     }
 
-    // Get current scroll position
-    const currentScrollTop = container.scrollTop;
+    // Move scroll by 1 pixel
+    container.scrollTop += 1;
     
-    // If manual scroll happened, update our reference
-    if (Math.abs(currentScrollTop - lastScrollPositionRef.current) > 5) {
-      lastScrollPositionRef.current = currentScrollTop;
-    }
-
-    // Scroll from current position
-    container.scrollTop = lastScrollPositionRef.current + 1;
-    lastScrollPositionRef.current = container.scrollTop;
+    // Update our position tracker
+    setAutoScrollPosition(container.scrollTop);
   };
 
-  // Start/stop scrolling
+  // Handle play/pause
   useEffect(() => {
     if (isPlaying) {
-      // Sync with current scroll position when starting
+      // When starting play, get current scroll position
       const container = scrollContainerRef.current;
       if (container) {
-        lastScrollPositionRef.current = container.scrollTop;
+        setAutoScrollPosition(container.scrollTop);
       }
       
       // Start scrolling
@@ -77,7 +71,7 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    lastScrollPositionRef.current = 0;
+    setAutoScrollPosition(0);
   }, [lines]);
 
   return (
