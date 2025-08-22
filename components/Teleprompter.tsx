@@ -20,6 +20,7 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
   const lastPositionRef = useRef<number>(0);
   const isPausedRef = useRef<boolean>(false);
   const hasStartedRef = useRef<boolean>(false);
+  const lastManualScrollRef = useRef<number>(0);
 
   // Improved animation with smooth pause/resume
   const animateScroll = useCallback(() => {
@@ -53,15 +54,22 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
       // Resume from last position
       const container = scrollContainerRef.current;
       if (container) {
-        // If this is the first time starting, use current position
+        // Check if there was manual scrolling since last pause
+        const hasManualScroll = Math.abs(currentPosition - lastManualScrollRef.current) > 5; // 5px threshold
+        
         if (!hasStartedRef.current) {
+          // First time starting
           lastPositionRef.current = currentPosition;
+          lastManualScrollRef.current = currentPosition;
           hasStartedRef.current = true;
         }
-        // If resuming from pause, use the stored position
         else if (isPausedRef.current) {
-          // Keep the position where we paused
-          // Don't change lastPositionRef.current here
+          if (hasManualScroll) {
+            // Manual scroll detected, use new position
+            lastPositionRef.current = currentPosition;
+            lastManualScrollRef.current = currentPosition;
+          }
+          // If no manual scroll, keep the stored position
         }
         
         // Start animation
@@ -82,6 +90,7 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
       const container = scrollContainerRef.current;
       if (container) {
         lastPositionRef.current = container.scrollTop;
+        lastManualScrollRef.current = container.scrollTop;
       }
     }
 
@@ -106,7 +115,13 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
   // Reset hasStarted when component unmounts or script changes
   useEffect(() => {
     hasStartedRef.current = false;
+    lastManualScrollRef.current = 0;
   }, [lines]);
+
+  // Update lastManualScrollRef when currentPosition changes (manual scroll)
+  useEffect(() => {
+    lastManualScrollRef.current = currentPosition;
+  }, [currentPosition]);
 
   // Calculate progress percentage
   const getProgressPercentage = () => {
