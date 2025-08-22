@@ -19,6 +19,7 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
   const animationFrameRef = useRef<number | null>(null);
   const lastPositionRef = useRef<number>(0);
   const isPausedRef = useRef<boolean>(false);
+  const hasStartedRef = useRef<boolean>(false);
 
   // Improved animation with smooth pause/resume
   const animateScroll = useCallback(() => {
@@ -49,16 +50,24 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
   // Handle play/pause state changes
   useEffect(() => {
     if (isPlaying) {
-      // Resume from last position or current position
+      // Resume from last position
       const container = scrollContainerRef.current;
-      if (container && !isPausedRef.current) {
-        // If not paused, start from current position
-        lastPositionRef.current = currentPosition;
-      }
-      
-      // Start animation
-      if (!animationFrameRef.current) {
-        animationFrameRef.current = requestAnimationFrame(animateScroll);
+      if (container) {
+        // If this is the first time starting, use current position
+        if (!hasStartedRef.current) {
+          lastPositionRef.current = currentPosition;
+          hasStartedRef.current = true;
+        }
+        // If resuming from pause, use the stored position
+        else if (isPausedRef.current) {
+          // Keep the position where we paused
+          // Don't change lastPositionRef.current here
+        }
+        
+        // Start animation
+        if (!animationFrameRef.current) {
+          animationFrameRef.current = requestAnimationFrame(animateScroll);
+        }
       }
       isPausedRef.current = false;
     } else {
@@ -69,7 +78,7 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
       }
       isPausedRef.current = true;
       
-      // Store current position
+      // Store current position when pausing
       const container = scrollContainerRef.current;
       if (container) {
         lastPositionRef.current = container.scrollTop;
@@ -93,6 +102,11 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
       animationFrameRef.current = requestAnimationFrame(animateScroll);
     }
   }, [speed, isPlaying, animateScroll]);
+
+  // Reset hasStarted when component unmounts or script changes
+  useEffect(() => {
+    hasStartedRef.current = false;
+  }, [lines]);
 
   // Calculate progress percentage
   const getProgressPercentage = () => {
