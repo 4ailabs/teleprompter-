@@ -39,10 +39,9 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
     container.scrollTop += 1;
   }, []);
 
-  // Start/stop scrolling - simplified for better mobile support
+  // Aggressive scroll for mobile compatibility
   useEffect(() => {
     if (isPlaying) {
-      // Use setInterval for all devices (more reliable on mobile)
       const interval = setInterval(() => {
         const container = scrollContainerRef.current;
         if (!container) return;
@@ -52,21 +51,46 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
           return;
         }
 
-        // Force scroll on mobile
+        // Try multiple scroll methods for maximum compatibility
         const currentTop = container.scrollTop;
+        
+        // Method 1: Direct scrollTop
         container.scrollTop = currentTop + 1;
         
-        // Fallback for mobile browsers that might not update scrollTop immediately
+        // Method 2: scrollBy if scrollTop didn't work
         if (container.scrollTop === currentTop) {
           container.scrollBy(0, 1);
         }
-      }, Math.max(1000 / speed, 16)); // Minimum 16ms (60fps)
+        
+        // Method 3: scroll() if both failed
+        if (container.scrollTop === currentTop) {
+          container.scroll(0, currentTop + 1);
+        }
+        
+        // Method 4: scrollTo if all else failed
+        if (container.scrollTop === currentTop) {
+          container.scrollTo(0, currentTop + 1);
+        }
+        
+        // Method 5: Force with requestAnimationFrame (nuclear option)
+        if (container.scrollTop === currentTop) {
+          requestAnimationFrame(() => {
+            container.style.transform = `translateY(-${currentTop + 1}px)`;
+          });
+        }
+      }, Math.max(1000 / speed, 20));
       
       intervalRef.current = interval;
     } else {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
+      }
+      
+      // Clean up any transform
+      const container = scrollContainerRef.current;
+      if (container) {
+        container.style.transform = '';
       }
     }
 
@@ -109,12 +133,17 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
 
       <div 
         ref={scrollContainerRef} 
-        className="absolute inset-0 overflow-y-auto scroll-smooth hide-scrollbar"
+        className="absolute inset-0 overflow-y-scroll hide-scrollbar"
         style={{
           WebkitOverflowScrolling: 'touch',
-          overscrollBehavior: 'none',
-          touchAction: 'pan-y'
+          overscrollBehavior: 'contain',
+          touchAction: 'manipulation',
+          overflow: 'scroll',
+          height: '100vh',
+          width: '100vw'
         }}
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
       >
         <div className="pt-[50vh] pb-[50vh] max-w-4xl mx-auto px-4 sm:px-6 lg:px-10">
           {lines.map((line, index) => (
