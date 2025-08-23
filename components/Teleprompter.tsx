@@ -20,42 +20,24 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
   const lastTimestampRef = useRef<number>(0);
   const accumulatedPixelsRef = useRef<number>(0);
 
-  // Use requestAnimationFrame for smooth scrolling
-  const animate = useCallback((timestamp: number) => {
+  // Simple smooth scrolling with fixed interval
+  const animate = useCallback(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
 
-    // Initialize timestamp on first frame
-    if (lastTimestampRef.current === 0) {
-      lastTimestampRef.current = timestamp;
-      animationRef.current = requestAnimationFrame(animate);
+    // Check if we're at the end
+    if (container.scrollTop >= container.scrollHeight - container.clientHeight) {
       return;
     }
 
-    // Calculate time elapsed (cap at 50ms to prevent large jumps)
-    const elapsed = Math.min(timestamp - lastTimestampRef.current, 50);
+    // Simple: move by 1 pixel every frame, adjust with speed
+    const frameInterval = Math.max(1, Math.floor(150 / speed));
     
-    // Speed determines pixels per second (speed/10 for reasonable values)
-    const pixelsPerSecond = speed / 10;
-    const pixelsToMove = (pixelsPerSecond * elapsed) / 1000;
-
-    // Accumulate fractional pixels
-    accumulatedPixelsRef.current += pixelsToMove;
-
-    // Only move when we have at least 1 pixel accumulated
-    if (accumulatedPixelsRef.current >= 1) {
-      const pixelsToScroll = Math.floor(accumulatedPixelsRef.current);
-      
-      // Check if we're at the end
-      if (container.scrollTop < container.scrollHeight - container.clientHeight) {
-        container.scrollTop += pixelsToScroll;
-      }
-      
-      // Keep remainder for next frame
-      accumulatedPixelsRef.current -= pixelsToScroll;
+    if (accumulatedPixelsRef.current % frameInterval === 0) {
+      container.scrollTop += 1;
     }
-
-    lastTimestampRef.current = timestamp;
+    
+    accumulatedPixelsRef.current++;
 
     // Continue animation if still playing
     if (isPlaying) {
@@ -66,8 +48,6 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
   // Start/stop animation
   useEffect(() => {
     if (isPlaying) {
-      // Reset timestamp to trigger first frame initialization
-      lastTimestampRef.current = 0;
       accumulatedPixelsRef.current = 0;
       animationRef.current = requestAnimationFrame(animate);
     } else {
