@@ -328,7 +328,7 @@ function App() {
     setIsPlaying(false);
   }, []);
 
-  // Update current position when scrolling manually
+  // Update current position when scrolling manually (minimal interference)
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
@@ -337,7 +337,7 @@ function App() {
       setCurrentPosition(container.scrollTop);
     };
 
-    container.addEventListener('scroll', handleScroll);
+    container.addEventListener('scroll', handleScroll, { passive: true });
     return () => container.removeEventListener('scroll', handleScroll);
   }, []);
 

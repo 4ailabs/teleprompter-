@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import type { ScriptLine } from '../types';
 
 interface TeleprompterProps {
@@ -16,69 +16,93 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
   scrollContainerRef,
   currentPosition 
 }) => {
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const scrollCounterRef = useRef<number>(0);
+  const animationRef = useRef<number | null>(null);
+  const lastTimestampRef = useRef<number>(0);
+  const accumulatedPixelsRef = useRef<number>(0);
 
-  // Super simple scroll function
-  const scrollDown = () => {
+  // Use requestAnimationFrame for smooth scrolling
+  const animate = useCallback((timestamp: number) => {
     const container = scrollContainerRef.current;
     if (!container) return;
 
-    // Check if we're at the end
-    if (container.scrollTop >= container.scrollHeight - container.clientHeight) {
+    // Initialize timestamp on first frame
+    if (lastTimestampRef.current === 0) {
+      lastTimestampRef.current = timestamp;
+      animationRef.current = requestAnimationFrame(animate);
       return;
     }
 
-    // Simple increment
-    scrollCounterRef.current += 1;
-    container.scrollTop = scrollCounterRef.current;
-  };
+    // Calculate time elapsed (cap at 50ms to prevent large jumps)
+    const elapsed = Math.min(timestamp - lastTimestampRef.current, 50);
+    
+    // Speed determines pixels per second (speed/10 for reasonable values)
+    const pixelsPerSecond = speed / 10;
+    const pixelsToMove = (pixelsPerSecond * elapsed) / 1000;
 
-  // Sync counter with manual scroll changes
+    // Accumulate fractional pixels
+    accumulatedPixelsRef.current += pixelsToMove;
+
+    // Only move when we have at least 1 pixel accumulated
+    if (accumulatedPixelsRef.current >= 1) {
+      const pixelsToScroll = Math.floor(accumulatedPixelsRef.current);
+      
+      // Check if we're at the end
+      if (container.scrollTop < container.scrollHeight - container.clientHeight) {
+        container.scrollTop += pixelsToScroll;
+      }
+      
+      // Keep remainder for next frame
+      accumulatedPixelsRef.current -= pixelsToScroll;
+    }
+
+    lastTimestampRef.current = timestamp;
+
+    // Continue animation if still playing
+    if (isPlaying) {
+      animationRef.current = requestAnimationFrame(animate);
+    }
+  }, [isPlaying, speed, scrollContainerRef]);
+
+  // Start/stop animation
+  useEffect(() => {
+    if (isPlaying) {
+      // Reset timestamp to trigger first frame initialization
+      lastTimestampRef.current = 0;
+      accumulatedPixelsRef.current = 0;
+      animationRef.current = requestAnimationFrame(animate);
+    } else {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+    }
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+    };
+  }, [isPlaying, animate]);
+
+  // Sync with manual scroll changes
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (container) {
-      scrollCounterRef.current = container.scrollTop;
+      // Reset animation state to current position
+      accumulatedPixelsRef.current = 0;
+      lastTimestampRef.current = 0;
     }
   }, [currentPosition]);
 
-  // Handle play/pause
+  // Clean up on unmount
   useEffect(() => {
-    if (isPlaying) {
-      // When starting play, sync with current scroll position
-      const container = scrollContainerRef.current;
-      if (container) {
-        scrollCounterRef.current = container.scrollTop;
-      }
-      
-      // Start scrolling
-      const interval = setInterval(scrollDown, 1000 / speed);
-      intervalRef.current = interval;
-    } else {
-      // Stop scrolling
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    }
-
-    // Cleanup
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [isPlaying, speed]);
-
-  // Reset on script change
-  useEffect(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    scrollCounterRef.current = 0;
-  }, [lines]);
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-black text-white overflow-hidden">
