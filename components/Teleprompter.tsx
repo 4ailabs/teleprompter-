@@ -39,23 +39,30 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
     container.scrollTop += 1;
   }, []);
 
-  // Start/stop scrolling with different methods for mobile vs desktop
+  // Start/stop scrolling - simplified for better mobile support
   useEffect(() => {
     if (isPlaying) {
-      if (isMobileRef.current) {
-        // Use setInterval for mobile (more reliable)
-        const interval = setInterval(scrollStep, 1000 / Math.max(speed, 20));
-        intervalRef.current = interval;
-      } else {
-        // Use requestAnimationFrame for desktop (smoother)
-        const animate = () => {
-          scrollStep();
-          if (isPlaying) {
-            setTimeout(() => requestAnimationFrame(animate), 1000 / Math.max(speed, 20));
-          }
-        };
-        requestAnimationFrame(animate);
-      }
+      // Use setInterval for all devices (more reliable on mobile)
+      const interval = setInterval(() => {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        // Check if we're at the end
+        if (container.scrollTop >= container.scrollHeight - container.clientHeight) {
+          return;
+        }
+
+        // Force scroll on mobile
+        const currentTop = container.scrollTop;
+        container.scrollTop = currentTop + 1;
+        
+        // Fallback for mobile browsers that might not update scrollTop immediately
+        if (container.scrollTop === currentTop) {
+          container.scrollBy(0, 1);
+        }
+      }, Math.max(1000 / speed, 16)); // Minimum 16ms (60fps)
+      
+      intervalRef.current = interval;
     } else {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -69,7 +76,7 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
         intervalRef.current = null;
       }
     };
-  }, [isPlaying, speed, scrollStep]);
+  }, [isPlaying, speed]);
 
   // Clean up on unmount
   useEffect(() => {
@@ -100,18 +107,30 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
         </div>
       </div>
 
-      <div ref={scrollContainerRef} className="absolute inset-0 overflow-y-auto scroll-smooth hide-scrollbar">
-        <div className="pt-[80vh] sm:pt-[100vh] pb-[80vh] sm:pb-[100vh] max-w-4xl sm:max-w-5xl mx-auto px-3 sm:px-6 lg:px-10">
+      <div 
+        ref={scrollContainerRef} 
+        className="absolute inset-0 overflow-y-auto scroll-smooth hide-scrollbar"
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'none',
+          touchAction: 'pan-y'
+        }}
+      >
+        <div className="pt-[50vh] pb-[50vh] max-w-4xl mx-auto px-4 sm:px-6 lg:px-10">
           {lines.map((line, index) => (
             <div key={index} className="mb-6 sm:mb-8 md:mb-12">
               <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-amber-400 uppercase tracking-widest mb-2 sm:mb-3">
                 {line.character !== 'NARRATOR' ? line.character : ''}
               </h2>
-              <p className={`text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl leading-tight sm:leading-normal md:leading-relaxed font-sans ${
+              <p className={`text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl leading-relaxed font-sans ${
                 line.character === 'NARRATOR' 
-                  ? 'text-gray-500 italic text-center sm:text-left' 
+                  ? 'text-gray-500 italic text-center' 
                   : 'text-neutral-100'
-              }`}>
+              }`} style={{ 
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                WebkitTouchCallout: 'none'
+              }}>
                 {line.dialogue}
               </p>
             </div>
@@ -126,6 +145,25 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
         .hide-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;
+        }
+        
+        /* Mobile specific fixes */
+        @media (max-width: 768px) {
+          body {
+            overflow: hidden;
+            -webkit-overflow-scrolling: touch;
+          }
+          
+          * {
+            -webkit-tap-highlight-color: transparent;
+          }
+        }
+        
+        /* Prevent zoom on mobile */
+        @media (max-width: 768px) {
+          input, textarea, select {
+            font-size: 16px !important;
+          }
         }
       `}</style>
     </div>
