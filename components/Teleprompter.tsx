@@ -16,12 +16,17 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
   scrollContainerRef,
   currentPosition 
 }) => {
-  const animationRef = useRef<number | null>(null);
-  const lastTimestampRef = useRef<number>(0);
-  const accumulatedPixelsRef = useRef<number>(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isMobileRef = useRef<boolean>(false);
 
-  // Simple smooth scrolling with fixed interval
-  const animate = useCallback(() => {
+  // Detect mobile device
+  useEffect(() => {
+    isMobileRef.current = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                         ('ontouchstart' in window);
+  }, []);
+
+  // Mobile-optimized scroll function
+  const scrollStep = useCallback(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
 
@@ -30,56 +35,47 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
       return;
     }
 
-    // Simple: move by 1 pixel every frame, adjust with speed
-    const frameInterval = Math.max(1, Math.floor(150 / speed));
-    
-    if (accumulatedPixelsRef.current % frameInterval === 0) {
-      container.scrollTop += 1;
-    }
-    
-    accumulatedPixelsRef.current++;
+    // Move by 1 pixel
+    container.scrollTop += 1;
+  }, []);
 
-    // Continue animation if still playing
-    if (isPlaying) {
-      animationRef.current = requestAnimationFrame(animate);
-    }
-  }, [isPlaying, speed, scrollContainerRef]);
-
-  // Start/stop animation
+  // Start/stop scrolling with different methods for mobile vs desktop
   useEffect(() => {
     if (isPlaying) {
-      accumulatedPixelsRef.current = 0;
-      animationRef.current = requestAnimationFrame(animate);
+      if (isMobileRef.current) {
+        // Use setInterval for mobile (more reliable)
+        const interval = setInterval(scrollStep, 1000 / Math.max(speed, 20));
+        intervalRef.current = interval;
+      } else {
+        // Use requestAnimationFrame for desktop (smoother)
+        const animate = () => {
+          scrollStep();
+          if (isPlaying) {
+            setTimeout(() => requestAnimationFrame(animate), 1000 / Math.max(speed, 20));
+          }
+        };
+        requestAnimationFrame(animate);
+      }
     } else {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     }
 
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
-  }, [isPlaying, animate]);
-
-  // Sync with manual scroll changes
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (container) {
-      // Reset animation state to current position
-      accumulatedPixelsRef.current = 0;
-      lastTimestampRef.current = 0;
-    }
-  }, [currentPosition]);
+  }, [isPlaying, speed, scrollStep]);
 
   // Clean up on unmount
   useEffect(() => {
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
       }
     };
   }, []);
