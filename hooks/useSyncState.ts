@@ -105,8 +105,24 @@ export function useSyncState<T>(
   }, [key, enabled]);
 
   // WebSocket for cross-device sync (same network)
+  // Only in development or when WS_ENABLED is true
   const connectWebSocket = useCallback(() => {
     if (!enabled) return;
+
+    // Check if WebSocket is available and enabled
+    const wsEnabled = (import.meta as any).env?.VITE_WS_ENABLED !== 'false';
+    const isDevelopment = (import.meta as any).env?.DEV === true;
+
+    // Only try WebSocket in development or if explicitly enabled
+    if (!isDevelopment && !wsEnabled) {
+      console.log('ℹ️  WebSocket deshabilitado en producción - usando solo BroadcastChannel');
+      setSyncStatus(prev => ({
+        ...prev,
+        isConnected: true, // Still connected via BroadcastChannel
+        error: null
+      }));
+      return;
+    }
 
     // Get WebSocket URL from environment or use default
     const wsUrl = (import.meta as any).env?.VITE_WS_URL || 'ws://localhost:8080';
@@ -150,17 +166,33 @@ export function useSyncState<T>(
         }
       };
 
-      ws.onerror = (error) => {
-        console.error('❌ Error WebSocket:', error);
-        setSyncStatus(prev => ({
-          ...prev,
-          error: 'Error de conexión WebSocket'
-        }));
+      ws.onerror = () => {
+        console.warn('⚠️  WebSocket no disponible - usando solo BroadcastChannel');
+        // Don't set error in production, just log it
+        if (isDevelopment) {
+          setSyncStatus(prev => ({
+            ...prev,
+            error: 'WebSocket no disponible'
+          }));
+        }
       };
 
       ws.onclose = () => {
-        console.log('⚠️  WebSocket desconectado - intentando reconectar...');
         wsRef.current = null;
+
+        // In production, don't try to reconnect
+        if (!isDevelopment) {
+          console.log('ℹ️  Usando solo BroadcastChannel (multi-tab sync)');
+          setSyncStatus(prev => ({
+            ...prev,
+            isConnected: true, // Still connected via BroadcastChannel
+            error: null
+          }));
+          return;
+        }
+
+        // In development, try to reconnect
+        console.log('⚠️  WebSocket desconectado - intentando reconectar...');
         setSyncStatus(prev => ({
           ...prev,
           isConnected: false
@@ -172,11 +204,20 @@ export function useSyncState<T>(
         }, 3000);
       };
     } catch (err) {
-      console.error('Error creando WebSocket:', err);
-      setSyncStatus(prev => ({
-        ...prev,
-        error: 'No se pudo conectar al servidor WebSocket'
-      }));
+      console.warn('⚠️  No se pudo conectar a WebSocket - usando solo BroadcastChannel');
+      // In production, this is expected and not an error
+      if (isDevelopment) {
+        setSyncStatus(prev => ({
+          ...prev,
+          error: 'WebSocket no disponible'
+        }));
+      } else {
+        setSyncStatus(prev => ({
+          ...prev,
+          isConnected: true, // Still connected via BroadcastChannel
+          error: null
+        }));
+      }
     }
   }, [enabled]);
 

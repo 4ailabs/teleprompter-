@@ -296,8 +296,19 @@ const RemoteControl: React.FC<RemoteControlProps> = ({
                 <span className="text-blue-400 text-sm font-medium">Sincronización Automática</span>
               </div>
               <p className="text-xs text-blue-300 leading-relaxed">
-                La sincronización funciona automáticamente entre todas las pestañas y ventanas del navegador en el mismo dispositivo.
-                Para sincronizar entre dispositivos diferentes, todos deben estar en la misma red WiFi.
+                {(import.meta as any).env?.DEV ? (
+                  <>
+                    <strong>Modo Desarrollo:</strong> Sincronización completa habilitada.
+                    <br />• Entre pestañas: Automático vía BroadcastChannel
+                    <br />• Entre dispositivos: WebSocket (misma red WiFi)
+                  </>
+                ) : (
+                  <>
+                    <strong>Modo Producción:</strong> Sincronización entre pestañas del mismo navegador.
+                    <br />• ✅ Múltiples pestañas/ventanas
+                    <br />• ⚠️ No disponible: Dispositivos diferentes
+                  </>
+                )}
               </p>
             </div>
 
