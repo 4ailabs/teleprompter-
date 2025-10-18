@@ -1,0 +1,19 @@
+# Ignore server files - Vercel only needs frontend
+server/
+Procfile
+railway.json
+*.md
+.env.example
+
+# Keep only what Vercel needs
+!package.json
+!vite.config.ts
+!tsconfig.json
+!index.html
+!index.css
+!index.tsx
+!App.tsx
+!components/
+!hooks/
+!types.ts
+!public/

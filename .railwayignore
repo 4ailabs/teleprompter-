@@ -1,0 +1,19 @@
+# Railway only needs the WebSocket server
+# Ignore frontend files
+dist/
+public/
+index.html
+index.css
+index.tsx
+App.tsx
+components/
+hooks/
+types.ts
+vite.config.ts
+tsconfig.json
+
+# Keep only what Railway needs
+!package.json
+!server/
+!railway.json
+!Procfile
