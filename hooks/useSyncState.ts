@@ -124,11 +124,15 @@ export function useSyncState<T>(
       return;
     }
 
-    // Get WebSocket URL from environment or use default
+    // Get WebSocket URL and access key from environment
     const wsUrl = (import.meta as any).env?.VITE_WS_URL || 'ws://localhost:8080';
+    const accessKey = (import.meta as any).env?.VITE_ACCESS_KEY || 'teleprompter2024';
+    
+    // Add access key to WebSocket URL
+    const wsUrlWithKey = `${wsUrl}?key=${accessKey}`;
 
     try {
-      const ws = new WebSocket(wsUrl);
+      const ws = new WebSocket(wsUrlWithKey);
       wsRef.current = ws;
 
       ws.onopen = () => {

@@ -5,6 +5,12 @@ import { createServer } from 'http';
 // Use environment variable PORT or default to 8080
 const PORT = process.env.PORT || 8080;
 
+// Access key for connections (can be set via environment variable)
+const ACCESS_KEY = process.env.ACCESS_KEY || 'teleprompter2024';
+
+console.log(`🔑 Access Key: ${ACCESS_KEY}`);
+console.log(`💡 Set ACCESS_KEY environment variable to change the key`);
+
 // Get local network IP
 function getLocalNetworkIP() {
   const nets = networkInterfaces();
@@ -61,11 +67,27 @@ httpServer.listen(PORT, () => {
   console.log(`🌐 HTTP Server listening on port ${PORT}`);
 });
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
+  // Extract access key from query parameters
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const providedKey = url.searchParams.get('key');
+  
+  // Check access key
+  if (providedKey !== ACCESS_KEY) {
+    console.log(`❌ Connection rejected - Invalid key: ${providedKey}`);
+    ws.send(JSON.stringify({
+      type: 'ACCESS_DENIED',
+      message: 'Invalid access key',
+      timestamp: Date.now()
+    }));
+    ws.close(1008, 'Invalid access key');
+    return;
+  }
+
   connectionCount++;
   const clientId = `client-${connectionCount}`;
 
-  console.log(`✅ Cliente conectado: ${clientId} (Total: ${clients.size + 1})`);
+  console.log(`✅ Cliente conectado: ${clientId} (Total: ${clients.size + 1}) - Key: ${providedKey}`);
 
   clients.add(ws);
 
