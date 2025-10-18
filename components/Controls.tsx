@@ -52,8 +52,17 @@ const Controls: React.FC<ControlsProps> = ({
             <div className="flex justify-center">
               <button 
                 onClick={onPlayPause}
-                className={`p-4 rounded-full ${isPlaying ? 'bg-red-600 hover:bg-red-500' : 'bg-amber-600 hover:bg-amber-500'} text-white transition-colors flex items-center justify-center shadow-lg`}
-                title={isPlaying ? 'Pausar' : 'Reproducir'}
+                disabled={syncStatus && !syncStatus.canControl}
+                className={`p-4 rounded-full ${
+                  syncStatus && !syncStatus.canControl 
+                    ? 'bg-neutral-700 text-neutral-500 cursor-not-allowed' 
+                    : isPlaying ? 'bg-red-600 hover:bg-red-500' : 'bg-amber-600 hover:bg-amber-500'
+                } text-white transition-colors flex items-center justify-center shadow-lg`}
+                title={
+                  syncStatus && !syncStatus.canControl 
+                    ? 'Solo el Host puede controlar' 
+                    : isPlaying ? 'Pausar' : 'Reproducir'
+                }
               >
                 {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
               </button>
@@ -68,7 +77,12 @@ const Controls: React.FC<ControlsProps> = ({
                 max="150"
                 value={speed}
                 onChange={(e) => onSpeedChange(parseInt(e.target.value))}
-                className="flex-1 h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                disabled={syncStatus && !syncStatus.canControl}
+                className={`flex-1 h-2 rounded-lg appearance-none ${
+                  syncStatus && !syncStatus.canControl 
+                    ? 'bg-neutral-800 cursor-not-allowed opacity-50' 
+                    : 'bg-neutral-700 cursor-pointer accent-amber-500'
+                }`}
               />
               <span className="text-amber-400 font-mono text-sm min-w-[40px]">{speed}</span>
             </div>
@@ -224,8 +238,17 @@ const Controls: React.FC<ControlsProps> = ({
             {/* Play/Pause Button */}
             <button 
               onClick={onPlayPause}
-              className={`p-4 rounded-full ${isPlaying ? 'bg-red-600 hover:bg-red-500' : 'bg-amber-600 hover:bg-amber-500'} text-white transition-colors flex items-center justify-center shadow-lg`}
-              title={isPlaying ? 'Pausar' : 'Reproducir'}
+              disabled={syncStatus && !syncStatus.canControl}
+              className={`p-4 rounded-full ${
+                syncStatus && !syncStatus.canControl 
+                  ? 'bg-neutral-700 text-neutral-500 cursor-not-allowed' 
+                  : isPlaying ? 'bg-red-600 hover:bg-red-500' : 'bg-amber-600 hover:bg-amber-500'
+              } text-white transition-colors flex items-center justify-center shadow-lg`}
+              title={
+                syncStatus && !syncStatus.canControl 
+                  ? 'Solo el Host puede controlar' 
+                  : isPlaying ? 'Pausar' : 'Reproducir'
+              }
             >
               {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
             </button>
@@ -241,7 +264,12 @@ const Controls: React.FC<ControlsProps> = ({
                   max="150"
                   value={speed}
                   onChange={(e) => onSpeedChange(parseInt(e.target.value))}
-                  className="w-20 h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  disabled={syncStatus && !syncStatus.canControl}
+                  className={`w-20 h-2 rounded-lg appearance-none ${
+                    syncStatus && !syncStatus.canControl 
+                      ? 'bg-neutral-800 cursor-not-allowed opacity-50' 
+                      : 'bg-neutral-700 cursor-pointer accent-amber-500'
+                  }`}
                 />
                 <span className="text-amber-400 font-mono text-sm w-8">{speed}</span>
               </div>

@@ -40,6 +40,9 @@ export function useSyncState<T>(
     role: initialRole,
     canControl: initialRole === 'host' || initialRole === 'controller'
   });
+  
+  const lastUpdateRef = useRef<number>(0);
+  const isUpdatingRef = useRef<boolean>(false);
 
   const deviceIdRef = useRef<string>(
     `device-${Math.random().toString(36).substring(2, 11)}-${Date.now()}`
@@ -63,7 +66,32 @@ export function useSyncState<T>(
       if (message.deviceId === deviceIdRef.current) return;
 
       if (message.type === 'STATE_UPDATE' || message.type === 'INITIAL_STATE') {
-        setState(message.data);
+        // Only accept control messages from host or controller
+        // Viewers should only receive, never send
+        const senderCanControl = message.role === 'host' || message.role === 'controller';
+        
+        // If we're a host, only accept from other hosts (for multi-tab same device)
+        // If we're a viewer, accept from anyone who can control
+        if (syncStatus.role === 'viewer' && senderCanControl) {
+          // Viewer accepts control from host/controller
+          if (!isUpdatingRef.current) {
+            isUpdatingRef.current = true;
+            setState(message.data);
+            setTimeout(() => {
+              isUpdatingRef.current = false;
+            }, 100);
+          }
+        } else if (syncStatus.role === 'host' || syncStatus.role === 'controller') {
+          // Host/Controller updates state normally
+          if (!isUpdatingRef.current) {
+            isUpdatingRef.current = true;
+            setState(message.data);
+            setTimeout(() => {
+              isUpdatingRef.current = false;
+            }, 100);
+          }
+        }
+        
         setSyncStatus(prev => ({
           ...prev,
           lastSync: Date.now(),
@@ -396,25 +424,30 @@ export function useSyncStateTabs<T>(key: string, initialValue: T) {
   }, [key]);
 
   const syncedSetState = useCallback((newState: T | ((prev: T) => T)) => {
+    // Only hosts and controllers can send updates
+    const canSendUpdates = syncStatus.canControl;
+    
     setState(prevState => {
       const nextState = typeof newState === 'function'
         ? (newState as (prev: T) => T)(prevState)
         : newState;
 
-      if (typeof BroadcastChannel !== 'undefined') {
+      // Only broadcast if this device can control
+      if (canSendUpdates && typeof BroadcastChannel !== 'undefined') {
         const channel = new BroadcastChannel(key);
         channel.postMessage({
           type: 'STATE_UPDATE',
           timestamp: Date.now(),
           deviceId: deviceIdRef.current,
-          data: nextState
+          data: nextState,
+          role: syncStatus.role
         } as SyncMessage);
         channel.close();
       }
 
       return nextState;
     });
-  }, [key]);
+  }, [key, syncStatus.canControl, syncStatus.role]);
 
   return [state, syncedSetState] as const;
 }
