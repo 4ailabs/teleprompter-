@@ -4,6 +4,7 @@ import Controls from './components/Controls';
 import ScriptInput from './components/ScriptInput';
 import Settings from './components/Settings';
 import RemoteControl from './components/RemoteControl';
+import AccessKeyModal from './components/AccessKeyModal';
 import type { ScriptLine } from './types';
 import { useSyncState } from './hooks/useSyncState';
 
@@ -340,6 +341,20 @@ function App() {
   const [isScriptEditorOpen, setIsScriptEditorOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isRemoteControlOpen, setIsRemoteControlOpen] = useState(false);
+  const [isAccessKeyModalOpen, setIsAccessKeyModalOpen] = useState(false);
+  const [accessKey, setAccessKey] = useState<string>(() => {
+    return localStorage.getItem('teleprompter-accessKey') || '';
+  });
+  const [accessKeyError, setAccessKeyError] = useState<string | undefined>();
+
+  // Check if access key exists on mount
+  useEffect(() => {
+    const savedKey = localStorage.getItem('teleprompter-accessKey');
+    if (!savedKey) {
+      setIsAccessKeyModalOpen(true);
+    }
+  }, []);
+
   const [fontSize, setFontSize] = useState<number>(() => {
     const saved = localStorage.getItem('teleprompter-fontSize');
     return saved ? parseInt(saved) : 48;
@@ -479,6 +494,27 @@ function App() {
     return () => document.removeEventListener('keydown', handleKeyPress, { capture: true });
   }, [isScriptEditorOpen]);
 
+  // Handle access key submission
+  const handleAccessKeySubmit = (key: string) => {
+    // Save key to localStorage and state
+    localStorage.setItem('teleprompter-accessKey', key);
+    setAccessKey(key);
+    setAccessKeyError(undefined);
+    setIsAccessKeyModalOpen(false);
+    
+    // TODO: The key will be used by useSyncState hook automatically
+    console.log('🔑 Access key saved:', key);
+  };
+
+  // Handle access key modal close
+  const handleAccessKeyClose = () => {
+    if (accessKey) {
+      setIsAccessKeyModalOpen(false);
+    } else {
+      setAccessKeyError('Necesitas ingresar una clave para continuar');
+    }
+  };
+
   return (
     <>
       <Teleprompter 
@@ -532,6 +568,12 @@ function App() {
         onClose={() => setIsRemoteControlOpen(false)}
         syncStatus={syncStatus}
         onChangeRole={changeRole}
+      />
+      <AccessKeyModal
+        isOpen={isAccessKeyModalOpen}
+        onSubmit={handleAccessKeySubmit}
+        onClose={handleAccessKeyClose}
+        error={accessKeyError}
       />
     </>
   );
