@@ -333,10 +333,30 @@ input:focus {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-
+  
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
+}
+
+/* ===== SMOOTH SCROLL SYNC ===== */
+
+/* Smooth scrolling for viewer mode to prevent jitter */
+.viewer-smooth-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Only apply smooth scrolling when syncing from host */
+[data-role="viewer"] .hide-scrollbar {
+  scroll-behavior: smooth;
+  transition: scroll-top 0.3s ease-out;
+}
+
+/* Disable smooth scroll when user is manually scrolling */
+[data-role="host"] .hide-scrollbar,
+[data-role="controller"] .hide-scrollbar {
+  scroll-behavior: auto;
 }
 
 /* Enhanced touch response */

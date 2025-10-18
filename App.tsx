@@ -445,12 +445,25 @@ function App() {
     const container = scrollContainerRef.current;
     if (!container) return;
 
+    let scrollTimeout: NodeJS.Timeout;
     const handleScroll = () => {
-      setCurrentPosition(container.scrollTop);
+      // Throttle scroll updates to reduce jitter in viewer
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+      
+      scrollTimeout = setTimeout(() => {
+        setCurrentPosition(container.scrollTop);
+      }, 50); // 50ms throttle for smoother sync
     };
 
     container.addEventListener('scroll', handleScroll, { passive: true });
-    return () => container.removeEventListener('scroll', handleScroll);
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+    };
   }, []);
 
   // Handle spacebar for play/pause

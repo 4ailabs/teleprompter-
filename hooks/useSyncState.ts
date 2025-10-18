@@ -43,6 +43,7 @@ export function useSyncState<T>(
   
   const lastUpdateRef = useRef<number>(0);
   const isUpdatingRef = useRef<boolean>(false);
+  const throttleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const deviceIdRef = useRef<string>(
     `device-${Math.random().toString(36).substring(2, 11)}-${Date.now()}`
@@ -67,28 +68,31 @@ export function useSyncState<T>(
 
       if (message.type === 'STATE_UPDATE' || message.type === 'INITIAL_STATE') {
         // Only accept control messages from host or controller
-        // Viewers should only receive, never send
         const senderCanControl = message.role === 'host' || message.role === 'controller';
         
-        // If we're a host, only accept from other hosts (for multi-tab same device)
-        // If we're a viewer, accept from anyone who can control
         if (syncStatus.role === 'viewer' && senderCanControl) {
-          // Viewer accepts control from host/controller
-          if (!isUpdatingRef.current) {
-            isUpdatingRef.current = true;
-            setState(message.data);
-            setTimeout(() => {
-              isUpdatingRef.current = false;
-            }, 100);
+          // Viewer: Throttle updates to reduce jitter
+          if (throttleTimeoutRef.current) {
+            clearTimeout(throttleTimeoutRef.current);
           }
+          
+          throttleTimeoutRef.current = setTimeout(() => {
+            if (!isUpdatingRef.current) {
+              isUpdatingRef.current = true;
+              setState(message.data);
+              setTimeout(() => {
+                isUpdatingRef.current = false;
+              }, 50);
+            }
+          }, 16); // ~60fps throttle for smooth updates
         } else if (syncStatus.role === 'host' || syncStatus.role === 'controller') {
-          // Host/Controller updates state normally
+          // Host/Controller: Update immediately
           if (!isUpdatingRef.current) {
             isUpdatingRef.current = true;
             setState(message.data);
             setTimeout(() => {
               isUpdatingRef.current = false;
-            }, 100);
+            }, 50);
           }
         }
         

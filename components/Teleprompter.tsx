@@ -278,10 +278,15 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
     return indicators[cueIndicatorStyle as keyof typeof indicators] || indicators.line;
   };
 
+  // Get role from URL params
+  const urlParams = new URLSearchParams(window.location.search);
+  const role = urlParams.get('role') || 'host';
+
   return (
     <div 
       className="fixed inset-0 text-white overflow-hidden"
       style={{ backgroundColor: getBackgroundColor(backgroundColor) }}
+      data-role={role}
     >
       {/* Top and Bottom Fades */}
       <div 
