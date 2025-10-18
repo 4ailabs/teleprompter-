@@ -1,7 +1,11 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import Teleprompter from './components/Teleprompter';
 import Controls from './components/Controls';
+import ScriptInput from './components/ScriptInput';
+import Settings from './components/Settings';
+import RemoteControl from './components/RemoteControl';
 import type { ScriptLine } from './types';
+import { useSyncState } from './hooks/useSyncState';
 
 const defaultScript = `
 PRÓLOGO – "YO FUI CALOR"
@@ -304,29 +308,136 @@ const parseScriptLocally = (scriptText: string): ScriptLine[] => {
 
 
 function App() {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [speed, setSpeed] = useState(50);
-  const [currentPosition, setCurrentPosition] = useState(0);
+  // Get initial role from URL params or localStorage
+  const getInitialRole = (): 'host' | 'controller' | 'viewer' => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const roleParam = urlParams.get('role') as 'host' | 'controller' | 'viewer' | null;
+    if (roleParam) return roleParam;
+
+    const savedRole = localStorage.getItem('teleprompter-role') as 'host' | 'controller' | 'viewer' | null;
+    return savedRole || 'host';
+  };
+
+  // Synced state across devices
+  const {
+    state: isPlaying,
+    setState: setIsPlaying,
+    syncStatus,
+    changeRole
+  } = useSyncState('teleprompter-isPlaying', false, true, getInitialRole());
+
+  const {
+    state: speed,
+    setState: setSpeed
+  } = useSyncState('teleprompter-speed', 50, true, getInitialRole());
+
+  const {
+    state: currentPosition,
+    setState: setCurrentPosition
+  } = useSyncState('teleprompter-position', 0, true, getInitialRole());
+
+  // Local state (not synced)
+  const [isScriptEditorOpen, setIsScriptEditorOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isRemoteControlOpen, setIsRemoteControlOpen] = useState(false);
+  const [fontSize, setFontSize] = useState<number>(() => {
+    const saved = localStorage.getItem('teleprompter-fontSize');
+    return saved ? parseInt(saved) : 48;
+  });
+  const [backgroundColor, setBackgroundColor] = useState<string>(() => {
+    return localStorage.getItem('teleprompter-background') || 'black';
+  });
+  const [margins, setMargins] = useState<number>(() => {
+    const saved = localStorage.getItem('teleprompter-margins');
+    return saved ? parseInt(saved) : 0;
+  });
+  const [cueIndicatorStyle, setCueIndicatorStyle] = useState<string>(() => {
+    return localStorage.getItem('teleprompter-cueIndicator') || 'line';
+  });
+  const [mirrorMode, setMirrorMode] = useState<string>(() => {
+    return localStorage.getItem('teleprompter-mirrorMode') || 'normal';
+  });
+  const [startTime, setStartTime] = useState<number | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Parse the script once, synchronously. No need for loading/error states.
-  const scriptLines = parseScriptLocally(defaultScript);
+  // Load script from localStorage or use default
+  const [currentScript, setCurrentScript] = useState<string>(() => {
+    const saved = localStorage.getItem('teleprompter-script');
+    return saved || defaultScript;
+  });
 
-  const handlePlayPause = useCallback(() => {
-    setIsPlaying(prev => !prev);
-  }, []);
+  // Parse the script
+  const scriptLines = parseScriptLocally(currentScript);
 
-  const handleSpeedChange = useCallback((newSpeed: number) => {
-    setSpeed(newSpeed);
-  }, []);
-
-  const handleReset = useCallback(() => {
+  // Save script to localStorage when it changes
+  const handleSaveScript = useCallback((newScript: string) => {
+    setCurrentScript(newScript);
+    localStorage.setItem('teleprompter-script', newScript);
+    // Reset position when script changes
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = 0;
       setCurrentPosition(0);
     }
     setIsPlaying(false);
   }, []);
+
+  const handlePlayPause = useCallback(() => {
+    setIsPlaying(prev => {
+      const newIsPlaying = !prev;
+      if (newIsPlaying && !startTime) {
+        // Start timer when play begins
+        setStartTime(Date.now());
+      } else if (!newIsPlaying) {
+        // Keep the start time for pause/resume
+        // Don't reset startTime here
+      }
+      return newIsPlaying;
+    });
+  }, [startTime]);
+
+  const handleSpeedChange = useCallback((newSpeed: number) => {
+    setSpeed(newSpeed);
+  }, []);
+
+  const handleFontSizeChange = useCallback((newSize: number) => {
+    setFontSize(newSize);
+    localStorage.setItem('teleprompter-fontSize', newSize.toString());
+  }, []);
+
+  const handleBackgroundChange = useCallback((newColor: string) => {
+    setBackgroundColor(newColor);
+    localStorage.setItem('teleprompter-background', newColor);
+  }, []);
+
+  const handleMarginsChange = useCallback((newMargins: number) => {
+    setMargins(newMargins);
+    localStorage.setItem('teleprompter-margins', newMargins.toString());
+  }, []);
+
+  const handleCueIndicatorChange = useCallback((newStyle: string) => {
+    setCueIndicatorStyle(newStyle);
+    localStorage.setItem('teleprompter-cueIndicator', newStyle);
+  }, []);
+
+  const handleMirrorModeChange = useCallback((newMode: string) => {
+    setMirrorMode(newMode);
+    localStorage.setItem('teleprompter-mirrorMode', newMode);
+  }, []);
+
+  const handleReset = useCallback(() => {
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      // For vertical mirror mode, start from the bottom (which appears as top)
+      if (mirrorMode === 'vertical') {
+        container.scrollTop = container.scrollHeight - container.clientHeight;
+      } else {
+        container.scrollTop = 0;
+      }
+      setCurrentPosition(container.scrollTop);
+    }
+    setIsPlaying(false);
+    setStartTime(null); // Reset timer
+  }, [mirrorMode]);
 
   // Update current position when scrolling manually (minimal interference)
   useEffect(() => {
@@ -341,6 +452,33 @@ function App() {
     return () => container.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Handle spacebar for play/pause
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+      
+      // Ignore if user is typing in a textarea or input
+      if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') {
+        return;
+      }
+
+      // Check for spacebar (both key and keyCode for compatibility)
+      if (event.key === ' ' || event.code === 'Space' || event.keyCode === 32) {
+        // Don't trigger if script editor is open
+        if (isScriptEditorOpen) {
+          return;
+        }
+        
+        event.preventDefault(); // Prevent page scroll
+        event.stopPropagation();
+        setIsPlaying(prev => !prev);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress, { capture: true });
+    return () => document.removeEventListener('keydown', handleKeyPress, { capture: true });
+  }, [isScriptEditorOpen]);
+
   return (
     <>
       <Teleprompter 
@@ -349,13 +487,51 @@ function App() {
         speed={speed} 
         scrollContainerRef={scrollContainerRef}
         currentPosition={currentPosition}
+        fontSize={fontSize}
+        backgroundColor={backgroundColor}
+        margins={margins}
+        cueIndicatorStyle={cueIndicatorStyle}
+        mirrorMode={mirrorMode}
+        startTime={startTime}
       />
-      <Controls 
-        isPlaying={isPlaying} 
+      <Controls
+        isPlaying={isPlaying}
         onPlayPause={handlePlayPause}
         speed={speed}
         onSpeedChange={handleSpeedChange}
         onReset={handleReset}
+        onEditScript={() => setIsScriptEditorOpen(true)}
+        fontSize={fontSize}
+        onFontSizeChange={handleFontSizeChange}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenRemoteControl={() => setIsRemoteControlOpen(true)}
+        syncStatus={syncStatus}
+      />
+      <ScriptInput
+        isOpen={isScriptEditorOpen}
+        onClose={() => setIsScriptEditorOpen(false)}
+        currentScript={currentScript}
+        onSave={handleSaveScript}
+      />
+      <Settings
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        fontSize={fontSize}
+        onFontSizeChange={handleFontSizeChange}
+        backgroundColor={backgroundColor}
+        onBackgroundChange={handleBackgroundChange}
+        margins={margins}
+        onMarginsChange={handleMarginsChange}
+        cueIndicatorStyle={cueIndicatorStyle}
+        onCueIndicatorChange={handleCueIndicatorChange}
+        mirrorMode={mirrorMode}
+        onMirrorModeChange={handleMirrorModeChange}
+      />
+      <RemoteControl
+        isOpen={isRemoteControlOpen}
+        onClose={() => setIsRemoteControlOpen(false)}
+        syncStatus={syncStatus}
+        onChangeRole={changeRole}
       />
     </>
   );

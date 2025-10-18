@@ -17,3 +17,12 @@ export interface NavigationControls {
   onReset: () => void;
   onGoToEnd: () => void;
 }
+
+export type DeviceRole = 'host' | 'controller' | 'viewer';
+
+export interface DeviceInfo {
+  id: string;
+  role: DeviceRole;
+  name: string;
+  connectedAt: number;
+}
