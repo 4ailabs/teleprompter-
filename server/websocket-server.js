@@ -1,7 +1,8 @@
 import { WebSocketServer } from 'ws';
 import { networkInterfaces } from 'os';
 
-const PORT = 8080;
+// Use environment variable PORT or default to 8080
+const PORT = process.env.PORT || 8080;
 
 // Get local network IP
 function getLocalNetworkIP() {
