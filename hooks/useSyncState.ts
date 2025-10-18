@@ -132,131 +132,18 @@ export function useSyncState<T>(
     };
   }, [key, enabled]);
 
-  // WebSocket for cross-device sync (same network)
-  // Only in development or when WS_ENABLED is true
+  // WebSocket disabled - using only BroadcastChannel for same-browser sync
   const connectWebSocket = useCallback(() => {
     if (!enabled) return;
 
-    // Check if WebSocket is available and enabled
-    const wsEnabled = (import.meta as any).env?.VITE_WS_ENABLED !== 'false';
-    const isDevelopment = (import.meta as any).env?.DEV === true;
-
-    // Only try WebSocket in development or if explicitly enabled
-    if (!isDevelopment && !wsEnabled) {
-      console.log('ℹ️  WebSocket deshabilitado en producción - usando solo BroadcastChannel');
-      setSyncStatus(prev => ({
-        ...prev,
-        isConnected: true, // Still connected via BroadcastChannel
-        error: null
-      }));
-      return;
-    }
-
-    // Get WebSocket URL from environment
-    const wsUrl = (import.meta as any).env?.VITE_WS_URL || 'ws://localhost:8080';
-    
-    // Get access key from localStorage (set by user in AccessKeyModal)
-    const accessKey = localStorage.getItem('teleprompter-accessKey') || 
-                     (import.meta as any).env?.VITE_ACCESS_KEY || 
-                     'teleprompter2024';
-    
-    // Add access key to WebSocket URL
-    const wsUrlWithKey = `${wsUrl}?key=${accessKey}`;
-    
-    console.log('🔑 Connecting with access key:', accessKey);
-
-    try {
-      const ws = new WebSocket(wsUrlWithKey);
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        console.log('✅ WebSocket conectado');
-        setSyncStatus(prev => ({
-          ...prev,
-          isConnected: true,
-          error: null
-        }));
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const message: SyncMessage = JSON.parse(event.data);
-
-          // Ignore our own messages
-          if (message.deviceId === deviceIdRef.current) return;
-
-          if (message.type === 'STATE_UPDATE') {
-            setState(message.data);
-            setSyncStatus(prev => ({
-              ...prev,
-              lastSync: Date.now()
-            }));
-          }
-
-          if (message.type === 'CLIENT_COUNT_UPDATE' || message.type === 'CONNECTED') {
-            setSyncStatus(prev => ({
-              ...prev,
-              connectedDevices: message.totalClients || 0
-            }));
-          }
-        } catch (err) {
-          console.error('Error procesando mensaje WebSocket:', err);
-        }
-      };
-
-      ws.onerror = () => {
-        console.warn('⚠️  WebSocket no disponible - usando solo BroadcastChannel');
-        // Don't set error in production, just log it
-        if (isDevelopment) {
-          setSyncStatus(prev => ({
-            ...prev,
-            error: 'WebSocket no disponible'
-          }));
-        }
-      };
-
-      ws.onclose = () => {
-        wsRef.current = null;
-
-        // In production, don't try to reconnect
-        if (!isDevelopment) {
-          console.log('ℹ️  Usando solo BroadcastChannel (multi-tab sync)');
-          setSyncStatus(prev => ({
-            ...prev,
-            isConnected: true, // Still connected via BroadcastChannel
-            error: null
-          }));
-          return;
-        }
-
-        // In development, try to reconnect
-        console.log('⚠️  WebSocket desconectado - intentando reconectar...');
-        setSyncStatus(prev => ({
-          ...prev,
-          isConnected: false
-        }));
-
-        // Reconnect after 3 seconds
-        reconnectTimeoutRef.current = setTimeout(() => {
-          connectWebSocket();
-        }, 3000);
-      };
-    } catch (err) {
-      console.warn('⚠️  No se pudo conectar a WebSocket - usando solo BroadcastChannel');
-      // In production, this is expected and not an error
-      if (isDevelopment) {
-        setSyncStatus(prev => ({
-          ...prev,
-          error: 'WebSocket no disponible'
-        }));
-      } else {
-        setSyncStatus(prev => ({
-          ...prev,
-          isConnected: true, // Still connected via BroadcastChannel
-          error: null
-        }));
-      }
-    }
+    // WebSocket disabled - only using BroadcastChannel
+    console.log('ℹ️  Usando solo BroadcastChannel (multi-pestaña)');
+    console.log('✅ Sincronización entre pestañas activada');
+    setSyncStatus(prev => ({
+      ...prev,
+      isConnected: true, // Connected via BroadcastChannel
+      error: null
+    }));
   }, [enabled]);
 
   useEffect(() => {
