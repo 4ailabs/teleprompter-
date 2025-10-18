@@ -32,11 +32,31 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const isMobileRef = useRef<boolean>(false);
   const [totalHeight, setTotalHeight] = useState(0);
+  const [touchStartY, setTouchStartY] = useState(0);
+  const [touchStartTime, setTouchStartTime] = useState(0);
+  const [isManualScrolling, setIsManualScrolling] = useState(false);
 
-  // Detect mobile device
+  // Detect mobile device and setup touch gestures
   useEffect(() => {
     isMobileRef.current = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
                          ('ontouchstart' in window);
+    
+    // Add mobile-specific styles
+    if (isMobileRef.current) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+    }
+    
+    return () => {
+      if (isMobileRef.current) {
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.width = '';
+        document.body.style.height = '';
+      }
+    };
   }, []);
 
   // Mobile-optimized scroll function
@@ -171,6 +191,69 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
     }
   }, [lines, fontSize, margins]);
 
+  // Touch gesture handlers for mobile
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!isMobileRef.current) return;
+    
+    const touch = e.touches[0];
+    setTouchStartY(touch.clientY);
+    setTouchStartTime(Date.now());
+    setIsManualScrolling(true);
+    
+    // Pause auto-scroll when user starts manual scrolling
+    if (isPlaying) {
+      // We'll handle this in the parent component
+    }
+  }, [isPlaying]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isMobileRef.current || !isManualScrolling) return;
+    
+    const touch = e.touches[0];
+    const deltaY = touchStartY - touch.clientY;
+    const container = scrollContainerRef.current;
+    
+    if (container) {
+      // Allow manual scrolling
+      container.scrollTop += deltaY;
+      setTouchStartY(touch.clientY);
+    }
+  }, [touchStartY, isManualScrolling]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!isMobileRef.current) return;
+    
+    const touchEndTime = Date.now();
+    const touchDuration = touchEndTime - touchStartTime;
+    
+    // If it was a quick tap (less than 200ms), toggle play/pause
+    if (touchDuration < 200) {
+      const touch = e.changedTouches[0];
+      const container = scrollContainerRef.current;
+      
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        const tapY = touch.clientY - rect.top;
+        
+        // Tap in upper third = previous, middle = play/pause, lower third = next
+        const third = rect.height / 3;
+        
+        if (tapY < third) {
+          // Previous section (scroll up)
+          container.scrollTop -= 200;
+        } else if (tapY > third * 2) {
+          // Next section (scroll down)
+          container.scrollTop += 200;
+        } else {
+          // Middle section = play/pause toggle
+          // This will be handled by the parent component
+        }
+      }
+    }
+    
+    setIsManualScrolling(false);
+  }, [touchStartTime]);
+
   // Background color mapping
   const getBackgroundColor = (color: string) => {
     const colors = {
@@ -244,8 +327,18 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
           height: '100vh',
           width: '100vw'
         }}
-        onTouchStart={(e) => e.stopPropagation()}
-        onTouchMove={(e) => e.stopPropagation()}
+        onTouchStart={(e) => {
+          e.stopPropagation();
+          handleTouchStart(e);
+        }}
+        onTouchMove={(e) => {
+          e.stopPropagation();
+          handleTouchMove(e);
+        }}
+        onTouchEnd={(e) => {
+          e.stopPropagation();
+          handleTouchEnd(e);
+        }}
       >
         <div 
           className="pt-[50vh] pb-[50vh] max-w-4xl mx-auto px-4 sm:px-6 lg:px-10"

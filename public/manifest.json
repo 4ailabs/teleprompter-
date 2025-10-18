@@ -1,15 +1,19 @@
 {
-  "name": "Theater Teleprompter",
+  "name": "Teleprompter Pro",
   "short_name": "Teleprompter",
-  "description": "Professional teleprompter for theater performances and presentations",
+  "description": "Teleprompter profesional con control remoto y sincronización multi-dispositivo",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
-  "theme_color": "#000000",
-  "orientation": "portrait-primary",
+  "theme_color": "#f59e0b",
+  "orientation": "any",
   "scope": "/",
   "lang": "es",
-  "categories": ["productivity", "utilities", "education"],
+  "categories": ["productivity", "utilities", "education", "business"],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
   "icons": [
     {
       "src": "/icon-72.png",
@@ -62,9 +66,9 @@
   ],
   "shortcuts": [
     {
-      "name": "Play/Pause",
+      "name": "Reproducir/Pausar",
       "short_name": "Play",
-      "description": "Start or pause the teleprompter",
+      "description": "Iniciar o pausar el teleprompter",
       "url": "/?action=play",
       "icons": [
         {
@@ -74,10 +78,34 @@
       ]
     },
     {
-      "name": "Reset",
+      "name": "Reiniciar",
       "short_name": "Reset",
-      "description": "Go to the beginning of the script",
+      "description": "Ir al inicio del script",
       "url": "/?action=reset",
+      "icons": [
+        {
+          "src": "/icon-96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Control Remoto",
+      "short_name": "Remote",
+      "description": "Abrir control remoto",
+      "url": "/?action=remote",
+      "icons": [
+        {
+          "src": "/icon-96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Configuración",
+      "short_name": "Settings",
+      "description": "Abrir configuración",
+      "url": "/?action=settings",
       "icons": [
         {
           "src": "/icon-96.png",
@@ -91,13 +119,25 @@
       "src": "/screenshot-wide.png",
       "sizes": "1280x720",
       "type": "image/png",
-      "form_factor": "wide"
+      "form_factor": "wide",
+      "label": "Vista de escritorio del teleprompter"
     },
     {
       "src": "/screenshot-narrow.png",
       "sizes": "750x1334",
       "type": "image/png",
-      "form_factor": "narrow"
+      "form_factor": "narrow",
+      "label": "Vista móvil del teleprompter"
+    }
+  ],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "handle_links": "preferred",
+  "protocol_handlers": [
+    {
+      "protocol": "web+teleprompter",
+      "url": "/?url=%s"
     }
   ]
 }
