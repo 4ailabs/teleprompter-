@@ -1,1 +1,1 @@
-web: node server/websocket-server.js
+web: npm start

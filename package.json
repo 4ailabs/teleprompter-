@@ -21,7 +21,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "ws-server": "node server/websocket-server.js",
-    "start": "npm run ws-server & npm run dev"
+    "start": "node server/websocket-server.js",
+    "dev-full": "npm run ws-server & npm run dev"
   },
   "dependencies": {
     "lucide-react": "^0.418.0",
