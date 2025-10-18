@@ -306,26 +306,35 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
       />
 
       {/* Status Indicator */}
-      <div className="absolute top-4 right-4 z-20">
+      <div
+        className="absolute top-4 right-4 z-20"
+        style={{
+          top: 'max(1rem, env(safe-area-inset-top))',
+          right: 'max(1rem, env(safe-area-inset-right))'
+        }}
+      >
         <div className={`px-3 py-1 rounded-full text-sm font-mono ${
-          isPlaying 
-            ? 'bg-green-600 text-white' 
+          isPlaying
+            ? 'bg-green-600 text-white'
             : 'bg-neutral-700 text-neutral-300'
         }`}>
           {isPlaying ? 'PLAYING' : 'PAUSED'}
         </div>
       </div>
 
-      <div 
-        ref={scrollContainerRef} 
+      <div
+        ref={scrollContainerRef}
         className="absolute inset-0 overflow-y-scroll hide-scrollbar"
         style={{
           WebkitOverflowScrolling: 'touch',
           overscrollBehavior: 'contain',
-          touchAction: 'manipulation',
+          touchAction: 'pan-y',
           overflow: 'scroll',
-          height: '100vh',
-          width: '100vw'
+          height: 'calc(var(--vh, 1vh) * 100)',
+          width: '100vw',
+          willChange: 'scroll-position',
+          transform: 'translateZ(0)',
+          backfaceVisibility: 'hidden'
         }}
         onTouchStart={(e) => {
           e.stopPropagation();
@@ -340,14 +349,16 @@ const Teleprompter: React.FC<TeleprompterProps> = ({
           handleTouchEnd(e);
         }}
       >
-        <div 
+        <div
           className="pt-[50vh] pb-[50vh] max-w-4xl mx-auto px-4 sm:px-6 lg:px-10"
-          style={{ 
-            marginLeft: `${margins}%`, 
+          style={{
+            marginLeft: `${margins}%`,
             marginRight: `${margins}%`,
             maxWidth: margins > 0 ? 'none' : '64rem',
-            transform: mirrorMode === 'vertical' ? 'scaleY(-1)' : 
-                      mirrorMode === 'horizontal' ? 'scaleX(-1)' : 'none'
+            transform: mirrorMode === 'vertical' ? 'scaleY(-1)' :
+                      mirrorMode === 'horizontal' ? 'scaleX(-1)' : 'none',
+            paddingLeft: 'max(1rem, env(safe-area-inset-left))',
+            paddingRight: 'max(1rem, env(safe-area-inset-right))'
           }}
         >
           {lines.map((line, index) => (

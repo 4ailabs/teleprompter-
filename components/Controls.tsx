@@ -42,7 +42,14 @@ const Controls: React.FC<ControlsProps> = ({
   }, []);
 
   return (
-    <div className={`fixed ${isMobile ? 'bottom-0 left-0 right-0' : 'bottom-0 left-0 right-0'} bg-black bg-opacity-90 backdrop-blur-sm ${isMobile ? 'p-2' : 'p-3 sm:p-4'} z-20 border-t border-neutral-700`}>
+    <div
+      className={`fixed ${isMobile ? 'bottom-0 left-0 right-0' : 'bottom-0 left-0 right-0'} bg-black bg-opacity-90 backdrop-blur-sm ${isMobile ? 'p-2' : 'p-3 sm:p-4'} z-20 border-t border-neutral-700`}
+      style={{
+        paddingBottom: isMobile ? 'max(0.5rem, env(safe-area-inset-bottom))' : undefined,
+        paddingLeft: isMobile ? 'max(0.5rem, env(safe-area-inset-left))' : undefined,
+        paddingRight: isMobile ? 'max(0.5rem, env(safe-area-inset-right))' : undefined
+      }}
+    >
       <div className={`max-w-4xl mx-auto flex ${isMobile ? 'flex-col gap-3' : 'items-center justify-between gap-4 sm:gap-6'}`}>
         
         {/* Mobile Layout */}

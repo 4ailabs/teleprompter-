@@ -63,8 +63,8 @@ const Settings: React.FC<SettingsProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-80 backdrop-blur-sm">
-      <div className="bg-neutral-900 rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-neutral-700">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black bg-opacity-80 backdrop-blur-sm">
+      <div className="bg-neutral-900 rounded-lg shadow-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] flex flex-col border border-neutral-700">
         
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-neutral-700">
@@ -82,32 +82,34 @@ const Settings: React.FC<SettingsProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-neutral-700">
+        <div className="flex overflow-x-auto border-b border-neutral-700 hide-scrollbar">
           <button
             onClick={() => setActiveTab('font')}
-            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'font' 
-                ? 'text-amber-500 border-b-2 border-amber-500 bg-neutral-800' 
+            className={`flex-1 min-w-[80px] px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+              activeTab === 'font'
+                ? 'text-amber-500 border-b-2 border-amber-500 bg-neutral-800'
                 : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
             }`}
           >
-            Font & Size
+            <span className="hidden sm:inline">Font & Size</span>
+            <span className="sm:hidden">Font</span>
           </button>
           <button
             onClick={() => setActiveTab('background')}
-            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'background' 
-                ? 'text-amber-500 border-b-2 border-amber-500 bg-neutral-800' 
+            className={`flex-1 min-w-[80px] px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+              activeTab === 'background'
+                ? 'text-amber-500 border-b-2 border-amber-500 bg-neutral-800'
                 : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
             }`}
           >
-            Background
+            <span className="hidden sm:inline">Background</span>
+            <span className="sm:hidden">BG</span>
           </button>
           <button
             onClick={() => setActiveTab('layout')}
-            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'layout' 
-                ? 'text-amber-500 border-b-2 border-amber-500 bg-neutral-800' 
+            className={`flex-1 min-w-[80px] px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+              activeTab === 'layout'
+                ? 'text-amber-500 border-b-2 border-amber-500 bg-neutral-800'
                 : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
             }`}
           >
@@ -115,19 +117,20 @@ const Settings: React.FC<SettingsProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('cue')}
-            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'cue' 
-                ? 'text-amber-500 border-b-2 border-amber-500 bg-neutral-800' 
+            className={`flex-1 min-w-[80px] px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+              activeTab === 'cue'
+                ? 'text-amber-500 border-b-2 border-amber-500 bg-neutral-800'
                 : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
             }`}
           >
-            Cue Indicator
+            <span className="hidden sm:inline">Cue Indicator</span>
+            <span className="sm:hidden">Cue</span>
           </button>
           <button
             onClick={() => setActiveTab('mirror')}
-            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'mirror' 
-                ? 'text-amber-500 border-b-2 border-amber-500 bg-neutral-800' 
+            className={`flex-1 min-w-[80px] px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+              activeTab === 'mirror'
+                ? 'text-amber-500 border-b-2 border-amber-500 bg-neutral-800'
                 : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
             }`}
           >
