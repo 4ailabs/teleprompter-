@@ -1,5 +1,6 @@
 import { WebSocketServer } from 'ws';
 import { networkInterfaces } from 'os';
+import { createServer } from 'http';
 
 // Use environment variable PORT or default to 8080
 const PORT = process.env.PORT || 8080;
@@ -18,10 +19,47 @@ function getLocalNetworkIP() {
   return 'localhost';
 }
 
-const wss = new WebSocketServer({ port: PORT });
-
 const clients = new Set();
 let connectionCount = 0;
+
+// Create HTTP server for Railway health checks
+const httpServer = createServer((req, res) => {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(200);
+    res.end();
+    return;
+  }
+
+  if (req.url === '/health' || req.url === '/') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      status: 'ok',
+      service: 'teleprompter-websocket',
+      timestamp: Date.now(),
+      connectedClients: clients.size,
+      uptime: process.uptime()
+    }));
+  } else {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      error: 'Not Found',
+      message: 'This is a WebSocket server for Teleprompter Pro'
+    }));
+  }
+});
+
+// Create WebSocket server on the HTTP server
+const wss = new WebSocketServer({ server: httpServer });
+
+// Start HTTP server
+httpServer.listen(PORT, () => {
+  console.log(`🌐 HTTP Server listening on port ${PORT}`);
+});
 
 wss.on('connection', (ws) => {
   connectionCount++;
